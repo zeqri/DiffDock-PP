@@ -113,13 +113,27 @@ class Loader:
 
         return all_res, all_atom, all_pos, visualization_values
 
-    def _to_dict(self, pdb, p1, p2):
-        item = {
-            "pdb_id": pdb,
-            "receptor": p1,
-            "ligand": p2
+    # def _to_dict(self, pdb, p1, p2,p1_latent,p2_latent):
+    #     item = {
+    #         "pdb_id": pdb,
+    #         "receptor": p1,
+    #         "ligand": p2
+    #     }
+    #     return item
+    
+    def _to_dict(self, pdb, p1, p2, p1_latent, p2_latent):
+        return {
+        "pdb_id": pdb,
+        "receptor": {
+            "structure": p1,
+            "latent": p1_latent
+        },
+        "ligand": {
+            "structure": p2,
+            "latent": p2_latent
         }
-        return item
+        }
+
 
     def convert_pdb(self, all_res, all_atom, all_pos, all_visualization_values):
         """
@@ -232,7 +246,7 @@ class Loader:
             for k in ["receptor", "ligand"]:
                 # >>> in what case would this be false?
                 if k in item:
-                    subset = self.convert_pdb(*item[k])
+                    subset = self.convert_pdb(*item[k]["structure"])
                     item[f"{k}_atom"] = subset[0]
                     item[f"{k}_seq"] = subset[1]
                     item[f"{k}_xyz"] = subset[2]
@@ -285,12 +299,19 @@ class Loader:
         """
             Convert raw dictionary to PyTorch geometric object
         """
+        # print(item["ligand"]["latent"]) 
+        # print(item["ligand"].keys())
+        # print(item[f"ligand_xyz"])
         data = HeteroData()
         data["name"] = item["path"]
         # retrieve position and compute kNN
         for key in ["receptor", "ligand"]:
             data[key].pos = item[f"{key}_xyz"].float()
             data[key].x = item[f"{key}_seq"]  # _seq is residue id
+            z = item[key]["latent"]
+            if not torch.is_tensor(z):
+               z = torch.from_numpy(z).float()
+            data[key].z = z
             if self.args.use_orientation_features:
                 data[key].n_i_feat = item[f"{key}_n_i_feat"].float()
                 data[key].u_i_feat = item[f"{key}_u_i_feat"].float()
@@ -489,7 +510,7 @@ class DIPSLoader(Loader):
     def read_files(self):
         data = {}
         # check if loaded previously
-        if not self.args.recache and os.path.exists(self.data_cache):
+        if not self.args.recache and os.path.exists(self.data_cache) and False:
             with open(self.data_cache, "rb") as f:
                 path_to_data = pickle.load(f)
         else:
@@ -507,7 +528,7 @@ class DIPSLoader(Loader):
                 if len(data) >= 2:
                     break
         # write to cache
-        if self.args.recache or not os.path.exists(self.data_cache):
+        if self.args.recache or not os.path.exists(self.data_cache) and False: 
             with open(self.data_cache, "wb+") as f:
                 pickle.dump(path_to_data, f)
         return data
@@ -519,19 +540,24 @@ class DIPSLoader(Loader):
             assignments)
         """
         for item in data.values():
-            rec = item["receptor"]
-            lig = item["ligand"]
+            rec = item["receptor"]["structure"]
+            lig = item["ligand"]["structure"]
             if len(rec[0]) < len(lig[0]):
-                item["receptor"] = lig
-                item["ligand"] = rec
+                item["receptor"]["structure"] = lig
+                item["ligand"]["structure"] = rec
         return data
 
     def parse_dill(self, fp, pdb_id):
         with open(fp, "rb") as f:
             data = dill.load(f)
         p1, p2 = data[1], data[2]
-        p1, p2 = self.parse_df(p1), self.parse_df(p2)
-        return self._to_dict(pdb_id, p1, p2)
+        p1, p2 = self.parse_df(p1), self.parse_df(p2) 
+        # with open(fp.replace("dill", "npz"), "rb") as f:
+        #     latent_data= latent_data()
+        latent_data=np.load(fp.replace("dill", "npz"))
+        latent_p1, latent_p2= latent_data["z_latent_p1"],latent_data["z_latent_p2"]
+
+        return self._to_dict(pdb_id, p1, p2,latent_p1,latent_p2)
 
     def parse_df(self, df):
         """

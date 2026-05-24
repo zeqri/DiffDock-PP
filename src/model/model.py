@@ -60,12 +60,12 @@ class ScoreModel(BaseModel):
 
     def forward(self, batch):
         # move graphs to cuda
-        tr_pred, rot_pred, tor_pred = self.encoder(batch)
+        tr_pred, rot_pred, latent_pred = self.encoder(batch)
 
         outputs = {}
         outputs["tr_pred"] = tr_pred
         outputs["rot_pred"] = rot_pred
-        outputs["tor_pred"] = tor_pred
+        outputs["latent_pred"] = latent_pred
 
         return outputs
 

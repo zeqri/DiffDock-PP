@@ -52,7 +52,7 @@ def main(args=None):
                                 group=args.group,
                                 config=args)
         else:
-            raise Exception("Improper logger.")
+            print("No logger")
 
     # training mode, dump args for reproducibility
     if args.mode != "test":
@@ -98,6 +98,10 @@ def main(args=None):
                     raise Exception("Improper logger.")
             #### set up fold experiment
             set_seed(args.seed)
+
+            
+            print("LATENT VARAIBLE")
+            print(args.latent)
             # make save folder
             fold_dir = os.path.join(args.save_path, f"fold_{fold}")
             args.fold_dir = fold_dir

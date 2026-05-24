@@ -1,0 +1,23 @@
+module load Stages/2024 GCCcore/.12.3.0 Python/3.11.3 CUDA/12.4
+
+python -m venv diffdock_pp_jureca
+source /p/project1/profound/al-zeqri1/DiffDock-PP/diffdock_pp_jureca/bin/activate
+
+pip install --upgrade pip
+
+# Core torch first (must match CUDA version on JURECA)
+pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+
+# PyG and compiled extensions
+pip install torch-geometric==2.7.0
+pip install pyg-lib torch-scatter torch-sparse torch-cluster torch-spline-conv \
+    -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
+
+# Rest of the dependencies (strip the compiled nvidia/torch/pyg packages)
+pip install e3nn==0.6.0 biopython==1.87 biopandas==0.5.1 wandb==0.26.1 \
+    scipy==1.17.1 pandas==3.0.2 matplotlib==3.10.9 tqdm==4.67.3 \
+    tensorboard==2.20.0 gitpython==3.1.49 pyyaml==6.0.3 networkx==3.6.1 \
+    opt_einsum==3.4.0 opt-einsum-fx==0.1.4 psutil==7.2.2 protobuf==7.34.1
+
+
+wandb_v1_Tjeh5YcqgSQEEPKfKYmSzzuHHBd_OujklFzOCRL02imb dzo0i83reUgnEhi0J5yWGan593c001K4n

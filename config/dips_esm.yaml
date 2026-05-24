@@ -2,9 +2,11 @@
  # file is parsed by inner-most keys only
  data:
      dataset: dips
-     data_file: datasets/DIPS/data_file.csv 
-     data_path: datasets/DIPS/pairs_pruned
+     data_file: /p/project1/profound/al-zeqri1/DiffDock-PP/datasets/DIPS/data_file_debug.csv 
+    #  data_path: /p/project1/profound/al-zeqri1/DiffDock-PP/datasets/DIPS/DIPS/data/DIPS/interim/pairs-pruned
+     data_path: /p/project1/profound/al-zeqri1/DiffDock-PP/datasets/DIPS/pairs_pruned/DIPS/data/DIPS/interim/pairs-pruned
      resolution: residue
+     recache: True
      no_graph_cache: True
      knn_size: 20
      use_orientation_features: False
@@ -42,4 +44,4 @@
      rot_s_min: 0.01
      rot_s_max: 1.65
      sample_train: True
-     num_inference_complexes_train_data: 1200
+     num_inference_complexes_train_data: 3

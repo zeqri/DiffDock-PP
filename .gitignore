@@ -21,4 +21,5 @@ env_list.txt
 plots
 datasets/DIPS/pairs_pruned/
 datasets/DIPS/dips.zip
+diffdock_pp_jureca/
 torchhub

@@ -26,10 +26,15 @@ python src/main.py \
     --num_folds $NUM_FOLDS \
     --num_gpu $NUM_GPU \
     --gpu $CUDA --seed $SEED \
-    --logger "wandb" \
     --project "DiffDock Tuning" \
     --visualize_n_val_graphs 0 \
     --visualization_path $VISUALIZATION_PATH \
+    --translation False\
+    --rotation False\
+    --latent True\
+    --tr_weight 0\
+    --rot_weight 0\
+    --latent_weight 1\
     #--checkpoint_path $SAVE_PATH \
     #--debug True # load small dataset
     #--entity coarse-graining-mit \

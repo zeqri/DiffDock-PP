@@ -314,7 +314,7 @@ def parse_args():
     parser.add_argument("--rot_weight",
                         type=float, default=0.33,
                         help="Weight of rotation loss")
-    parser.add_argument("--tor_weight",
+    parser.add_argument("--latent_weight",
                         type=float, default=0.33,
                         help="Weight of torsional loss")
 
@@ -330,6 +330,12 @@ def parse_args():
     parser.add_argument("--tr_s_max",
                         type=float, default=30,
                         help="Max sigma for translational component")
+    parser.add_argument("--latent_s_min",
+                        type=float, default=0.1,
+                        help="Min sigma for translational component")
+    parser.add_argument("--latent_s_max",
+                        type=float, default=30,
+                        help="Max sigma for translational component")
     parser.add_argument("--tor_s_min",
                         type=float, default=0.0314,
                         help="Min sigma for torsional component")
@@ -338,7 +344,20 @@ def parse_args():
                         help="Max sigma for torsional component")
     parser.add_argument("--no_torsion", action="store_true", default=False,
                         help="If set only rigid matching")
-
+    
+    parser.add_argument("--latent",
+                        type=lambda x: (str(x).lower() == 'true'),
+                        default=True,
+                        help="Enable or disable torsion" )
+    parser.add_argument("--translation",
+                        type=lambda x: (str(x).lower() == 'true'),
+                        default=True,
+                        help="Enable or disable translation")
+    parser.add_argument("--rotation",
+                        type=lambda x: (str(x).lower() == 'true'),
+                        default=True,
+                        help="Enable or disable rotation") 
+    
     # confidence model
     parser.add_argument('--rmsd_prediction', action='store_true', 
                         default=False, 

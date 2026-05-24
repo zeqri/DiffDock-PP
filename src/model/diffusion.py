@@ -247,6 +247,18 @@ class TensorProductScoreModel(torch.nn.Module):
                 nn.ReLU(),
                 nn.Linear(ns, 1),
             )
+            self.latent_predictor = nn.Sequential(
+            nn.Linear(2 * ns, ns),
+            nn.ReLU(),
+            nn.Dropout(args.dropout),
+            nn.Linear(ns, 8),)
+
+            self.latent_final_layer = nn.Sequential(
+                nn.Linear(1 + args.sigma_embed_dim, ns),
+                nn.Dropout(args.dropout),
+                nn.ReLU(),
+                nn.Linear(ns, 1),
+            )
 
             if not self.no_torsion:
                 # torsion angles components
@@ -278,11 +290,11 @@ class TensorProductScoreModel(torch.nn.Module):
         # get noise schedule
         tr_t = batch.complex_t["tr"]
         rot_t = batch.complex_t["rot"]
-        tor_t = batch.complex_t["tor"]
+        latent_s = batch.complex_t["latent"]
         if not self.confidence_mode:
-            tr_s, rot_s, tor_s = self.noise_schedule(tr_t, rot_t, tor_t)
+            tr_s, rot_s, tor_s = self.noise_schedule(tr_t, rot_t, latent_s)
         else:
-            tr_s, rot_s, tor_s = tr_t, rot_t, tor_t
+            tr_s, rot_s, tor_s = tr_t, rot_t, latent_s
 
         # build ligand graph
         ligand_graph = self.build_rigid_graph(batch, "ligand")
@@ -381,6 +393,14 @@ class TensorProductScoreModel(torch.nn.Module):
                 scatter_mean(scalar_lig_attr, batch["ligand"].batch, dim=0)
             ).squeeze(dim=-1)
             return confidence
+        
+        scalar_lig_attr = torch.cat(
+            [lig_node_attr[:, :self.ns], lig_node_attr[:, -self.ns:]], dim=1) if self.num_conv >= 3 else F.pad(lig_node_attr[:, :self.ns], (0, self.ns))
+        
+        z_pred = self.latent_predictor(
+                    scatter_mean(scalar_lig_attr, batch["ligand"].batch, dim=0)
+                )  # shape: [batch_size, 8]
+
 
         # compute translational and rotational score vectors
         (
@@ -414,66 +434,33 @@ class TensorProductScoreModel(torch.nn.Module):
         rot_norm = torch.linalg.vector_norm(rot_pred, dim=1)[:, None]
         rot_scale = self.rot_final_layer(
             torch.cat([rot_norm, batch.graph_sigma_emb], dim=1))
-        rot_pred = (rot_pred / rot_norm) * rot_scale
+        rot_pred = (rot_pred / rot_norm) * rot_scale 
+
+
+
+
+        latent_norm  = torch.linalg.vector_norm(z_pred, dim=1)[:, None]
+        latent_scale = self.latent_final_layer(
+        torch.cat([latent_norm, batch.graph_sigma_emb], dim=1))
+        z_pred = (z_pred / latent_norm) * latent_scale
+
 
         if self.scale_by_sigma:
             tr_pred = tr_pred / tr_s.unsqueeze(1)
+            z_pred = z_pred / latent_s.unsqueeze(1)
             rot_pred = rot_pred * score_norm(rot_s)[:, None]
             rot_pred = rot_pred.to(batch["ligand"].x.device)
 
-        if self.no_torsion or batch["ligand"].edge_mask.sum() == 0:
-            tor_pred = torch.empty(0, device=tr_pred.device)
-            return tr_pred, rot_pred, tor_pred
+        # if self.no_torsion or batch["ligand"].edge_mask.sum() == 0:
+        #     tor_pred = torch.empty(0, device=tr_pred.device)
+        #     return tr_pred, rot_pred, tor_pred
+        
+        return tr_pred, rot_pred, z_pred 
+    
 
         # >>> FIXED UP TO HERE
 
-        # torsional components
-        (
-            tor_bonds,
-            tor_edge_index,
-            tor_edge_attr,
-            tor_edge_sh,
-        ) = self.bond_conv_graph(batch)
-        tor_bond_vec = (
-            batch["ligand"].pos[tor_bonds[1]] - batch["ligand"].pos[tor_bonds[0]]
-        )
-        tor_bond_attr = lig_node_attr[tor_bonds[0]] + lig_node_attr[tor_bonds[1]]
-
-        tor_bonds_sh = o3.spherical_harmonics(
-            "2e", tor_bond_vec, normalize=True, normalization="component"
-        )
-        tor_edge_sh = self.final_tp_tor(tor_edge_sh, tor_bonds_sh[tor_edge_index[0]])
-
-        tor_edge_attr = torch.cat(
-            [
-                tor_edge_attr,
-                lig_node_attr[tor_edge_index[1], : self.ns],
-                tor_bond_attr[tor_edge_index[0], : self.ns],
-            ],
-            -1,
-        )
-        tor_pred = self.tor_bond_conv(
-            lig_node_attr,
-            tor_edge_index,
-            tor_edge_attr,
-            tor_edge_sh,
-            out_nodes=batch["ligand"].edge_mask.sum(),
-            reduction="mean",
-        )
-        tor_pred = self.tor_final_layer(tor_pred).squeeze(1)
-        edge_sigma = tor_s[batch["ligand"].batch][
-            batch["ligand", "ligand"].edge_index[0]
-        ][batch["ligand"].edge_mask]
-
-        if self.scale_by_sigma:
-            tor_pred = tor_pred * torch.sqrt(
-                torch.tensor(torus.score_norm(edge_sigma.cpu().numpy()))
-                .float()
-                .to(batch["ligand"].x.device)
-            )
-
-        return tr_pred, rot_pred, tor_pred
-
+       
     def build_rigid_graph(self, batch, key):
         """
             Fixed rigid proteins.

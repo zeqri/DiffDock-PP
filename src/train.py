@@ -46,7 +46,9 @@ def train(train_loader, val_loader, model,
                            initial=start_epoch,
                            desc="train epoch", ncols=50)
     for epoch in ep_iterator:
-        writer.add_scalar("epoch", epoch, num_batches)
+        
+        if writer is not None:
+            writer.add_scalar("epoch", epoch, num_batches)
         # start epoch!
         iterator = enumerate(train_loader)
         if not args.no_tqdm:
