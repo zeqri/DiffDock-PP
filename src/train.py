@@ -145,92 +145,92 @@ def train(train_loader, val_loader, model,
             last_path = os.path.join(fold_dir, "model_last.pth")
             save_model(model, args, optimizer, last_path)
         # >>>
-        #if avg_val_score < best_loss:
-        #    best_loss = avg_val_score
+        if avg_val_score < best_loss:
+           best_loss = avg_val_score
 
-        # save model
-        #path_suffix = f"{num_batches}_{epoch}_{avg_val_score:.3f}_{val_loss:.3f}.pth"
-        #if val_loss < best_loss:
-        #    best_loss = val_loss
-        #    best_epoch = epoch
-        #    # save model ONLY IF best
-        #    best_path = os.path.join(fold_dir, f"model_best_{path_suffix}")
-        #    save_model(model, args, optimizer, best_path)
-
-        ## check if out of patience
-        #if epoch - best_epoch >= args.patience:
-        #    break
-
-        if args.val_inference_freq is not None and epoch % args.val_inference_freq == 0: # and epoch != 0:
-            # run reverse diffusion process
-            # only use subset to run reverse diffusion process
-            if args.num_inference_complexes is not None:
-                data_list = loaders_for_reverse_diffusion["val"][:args.num_inference_complexes]
-            else:
-                data_list = loaders_for_reverse_diffusion["val"]
-
-            samples_val = sample(data_list, model, args, epoch=epoch,
-                                 visualize_first_n_samples=args.visualize_n_val_graphs,
-                                 visualization_dir=args.visualization_path)
-
-            meter = evaluate_all_rmsds(data_list, samples_val)
-            ligand_rmsd_summarized, complex_rmsd_summarized, interface_rmsd_summarized = meter.summarize()
-
-            if writer is not None:
-                for rd_key, rd_value in ligand_rmsd_summarized.items():
-                    writer.add_scalar(f"val_lig_rmsd_{rd_key}", rd_value, num_batches)
-                for rd_key, rd_value in complex_rmsd_summarized.items():
-                    writer.add_scalar(f"val_complex_rmsd_{rd_key}", rd_value, num_batches)
-
-
-            # save model if it improves rmsd
-            if ligand_rmsd_summarized['mean'] < best_metrics['rmsds_mean'] and ligand_rmsd_summarized['median'] < best_metrics['rmsds_median']:
-                best_metrics['rmsds_mean'] = ligand_rmsd_summarized['mean']
-                best_metrics['rmsds_median'] = ligand_rmsd_summarized['median']
-                best_epoch = epoch
-                best_loss = val_loss
-
-                path_suffix = f"{num_batches}_{epoch}_{best_metrics['rmsds_mean']:.3f}_{best_metrics['rmsds_median']:.3f}.pth"
-                # save model ONLY IF best
-                best_path = os.path.join(fold_dir, f"model_best_{path_suffix}")
-                save_model(model, args, optimizer, best_path)
-
-        if args.sample_train and args.val_inference_freq is not None and epoch % args.val_inference_freq == 0:# and epoch != 0:
-            # run reverse diffusion process
-            # only use subset to run reverse diffusion process
-            #if args.num_inference_complexes_train_data is not None:
-            #    random_indices = np.random.choice(len(loaders_for_reverse_diffusion["train"]), size=args.num_inference_complexes_train_data, replace=False)
-            #    data_list = loaders_for_reverse_diffusion["train"][random_indices]
-            #else:
-            #    data_list = loaders_for_reverse_diffusion["train"]
-
-            if args.num_inference_complexes_train_data is not None:
-                random_indices = np.random.choice(len(loaders_for_reverse_diffusion["train"]), size=args.num_inference_complexes_train_data, replace=False)
-
-                data_list = BindingDataset(args, {}, apply_transform=False)
-                data_list.data = [loaders_for_reverse_diffusion["train"].data[i] for i in random_indices]
-                data_list.length = len(data_list.data)
-            else:
-                data_list = loaders_for_reverse_diffusion["train"]
-
-            samples_val = sample(data_list, model, args, epoch=epoch,
-                                 visualize_first_n_samples=args.visualize_n_val_graphs,
-                                 visualization_dir=args.visualization_path)
-
-            print(f'on {len(samples_val)} training samples:')
-            meter = evaluate_all_rmsds(data_list, samples_val)
-            ligand_rmsd_summarized, complex_rmsd_summarized, interface_rmsd_summarized = meter.summarize()
-
-            if writer is not None:
-                for rd_key, rd_value in ligand_rmsd_summarized.items():
-                    writer.add_scalar(f"train_lig_rmsd_{rd_key}", rd_value, num_batches)
-                for rd_key, rd_value in complex_rmsd_summarized.items():
-                    writer.add_scalar(f"train_complex_rmsd_{rd_key}", rd_value, num_batches)
-
+        #save model based on best val loss
+        path_suffix = f"{num_batches}_{epoch}_{avg_val_score:.3f}_{val_loss:.3f}.pth"
+        if val_loss < best_loss:
+           best_loss = val_loss
+           best_epoch = epoch
+           # save model ONLY IF best
+           best_path = os.path.join(fold_dir, f"model_best_{path_suffix}")
+           save_model(model, args, optimizer, best_path)
 
         # check if out of patience
         if epoch - best_epoch >= args.patience:
-            break
+           break
+
+        # if args.val_inference_freq is not None and epoch % args.val_inference_freq == 0: # and epoch != 0:
+        #     # run reverse diffusion process
+        #     # only use subset to run reverse diffusion process
+        #     if args.num_inference_complexes is not None:
+        #         data_list = loaders_for_reverse_diffusion["val"][:args.num_inference_complexes]
+        #     else:
+        #         data_list = loaders_for_reverse_diffusion["val"]
+
+        #     samples_val = sample(data_list, model, args, epoch=epoch,
+        #                          visualize_first_n_samples=args.visualize_n_val_graphs,
+        #                          visualization_dir=args.visualization_path)
+
+        #     meter = evaluate_all_rmsds(data_list, samples_val)
+        #     ligand_rmsd_summarized, complex_rmsd_summarized, interface_rmsd_summarized = meter.summarize()
+
+        #     if writer is not None:
+        #         for rd_key, rd_value in ligand_rmsd_summarized.items():
+        #             writer.add_scalar(f"val_lig_rmsd_{rd_key}", rd_value, num_batches)
+        #         for rd_key, rd_value in complex_rmsd_summarized.items():
+        #             writer.add_scalar(f"val_complex_rmsd_{rd_key}", rd_value, num_batches)
+
+
+        #     # save model if it improves rmsd
+        #     if ligand_rmsd_summarized['mean'] < best_metrics['rmsds_mean'] and ligand_rmsd_summarized['median'] < best_metrics['rmsds_median']:
+        #         best_metrics['rmsds_mean'] = ligand_rmsd_summarized['mean']
+        #         best_metrics['rmsds_median'] = ligand_rmsd_summarized['median']
+        #         best_epoch = epoch
+        #         best_loss = val_loss
+
+        #         path_suffix = f"{num_batches}_{epoch}_{best_metrics['rmsds_mean']:.3f}_{best_metrics['rmsds_median']:.3f}.pth"
+        #         # save model ONLY IF best
+        #         best_path = os.path.join(fold_dir, f"model_best_{path_suffix}")
+        #         save_model(model, args, optimizer, best_path)
+
+        # if args.sample_train and args.val_inference_freq is not None and epoch % args.val_inference_freq == 0:# and epoch != 0:
+        #     # run reverse diffusion process
+        #     # only use subset to run reverse diffusion process
+        #     #if args.num_inference_complexes_train_data is not None:
+        #     #    random_indices = np.random.choice(len(loaders_for_reverse_diffusion["train"]), size=args.num_inference_complexes_train_data, replace=False)
+        #     #    data_list = loaders_for_reverse_diffusion["train"][random_indices]
+        #     #else:
+        #     #    data_list = loaders_for_reverse_diffusion["train"]
+
+        #     if args.num_inference_complexes_train_data is not None:
+        #         random_indices = np.random.choice(len(loaders_for_reverse_diffusion["train"]), size=args.num_inference_complexes_train_data, replace=False)
+
+        #         data_list = BindingDataset(args, {}, apply_transform=False)
+        #         data_list.data = [loaders_for_reverse_diffusion["train"].data[i] for i in random_indices]
+        #         data_list.length = len(data_list.data)
+        #     else:
+        #         data_list = loaders_for_reverse_diffusion["train"]
+
+        #     samples_val = sample(data_list, model, args, epoch=epoch,
+        #                          visualize_first_n_samples=args.visualize_n_val_graphs,
+        #                          visualization_dir=args.visualization_path)
+
+        #     print(f'on {len(samples_val)} training samples:')
+        #     meter = evaluate_all_rmsds(data_list, samples_val)
+        #     ligand_rmsd_summarized, complex_rmsd_summarized, interface_rmsd_summarized = meter.summarize()
+
+        #     if writer is not None:
+        #         for rd_key, rd_value in ligand_rmsd_summarized.items():
+        #             writer.add_scalar(f"train_lig_rmsd_{rd_key}", rd_value, num_batches)
+        #         for rd_key, rd_value in complex_rmsd_summarized.items():
+        #             writer.add_scalar(f"train_complex_rmsd_{rd_key}", rd_value, num_batches)
+
+
+        # # check if out of patience
+        # if epoch - best_epoch >= args.patience:
+        #     break
 
 
         # end of epoch ========

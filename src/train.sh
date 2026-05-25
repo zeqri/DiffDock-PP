@@ -1,6 +1,24 @@
-# This script should contain run-specific information
-# like GPU id, batch size, etc.
-# Everything else should be specified in config.yaml
+#!/bin/bash
+#SBATCH --job-name=green
+#SBATCH --account=loki
+#SBATCH --partition=dc-gpu
+#SBATCH --time=4:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=12
+
+
+
+
+module load Stages/2024
+module load GCCcore/.12.3.0
+module load Python/3.11.3 
+module load CUDA/12 
+
+source /p/project1/profound/al-zeqri1/DiffDock-dev/DiffDock-PP/diffdock_pp_jureca/bin/activate
+export TORCH_HOME=/p/project1/profound/al-zeqri1/.cache/torch
+
 
 NUM_FOLDS=1  # number of seeds to try, default 5
 SEED=0  # initial seed

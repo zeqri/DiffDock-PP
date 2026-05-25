@@ -17,6 +17,19 @@ from torch_cluster import knn_graph
 from torch_geometric.data import HeteroData
 
 from scipy.spatial.transform import Rotation
+import esm
+import esm.pretrained 
+
+def _load_hub_workaround_offline(url):
+    import os
+    model_name = url.split("/")[-1]
+    cache_path = os.path.join(
+        "/p/project1/profound/al-zeqri1/.cache/torch/hub/checkpoints",
+        model_name
+    )
+    return torch.load(cache_path, map_location="cpu", weights_only=False)
+
+esm.pretrained.load_hub_workaround = _load_hub_workaround_offline
 
 import Bio
 # These are just annoying :')
@@ -340,10 +353,11 @@ class Loader:
 
         printt("Computing ESM embeddings")
         # load pretrained model
-        esm_model, alphabet = torch.hub.load(
-                "facebookresearch/esm:main",
-                "esm2_t33_650M_UR50D")
+        esm_model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
         self.esm_model = esm_model.cuda().eval()
+
+    
+
         tokenizer = alphabet.get_batch_converter()
         # convert to 3 letter codes
         aa_code = defaultdict(lambda: "<unk>")
@@ -510,7 +524,7 @@ class DIPSLoader(Loader):
     def read_files(self):
         data = {}
         # check if loaded previously
-        if not self.args.recache and os.path.exists(self.data_cache) and False:
+        if not self.args.recache and os.path.exists(self.data_cache):
             with open(self.data_cache, "rb") as f:
                 path_to_data = pickle.load(f)
         else:
@@ -528,7 +542,7 @@ class DIPSLoader(Loader):
                 if len(data) >= 2:
                     break
         # write to cache
-        if self.args.recache or not os.path.exists(self.data_cache) and False: 
+        if self.args.recache or not os.path.exists(self.data_cache): 
             with open(self.data_cache, "wb+") as f:
                 pickle.dump(path_to_data, f)
         return data

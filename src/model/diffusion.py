@@ -400,6 +400,7 @@ class TensorProductScoreModel(torch.nn.Module):
         z_pred = self.latent_predictor(
                     scatter_mean(scalar_lig_attr, batch["ligand"].batch, dim=0)
                 )  # shape: [batch_size, 8]
+                
 
 
         # compute translational and rotational score vectors
@@ -437,11 +438,8 @@ class TensorProductScoreModel(torch.nn.Module):
         rot_pred = (rot_pred / rot_norm) * rot_scale 
 
 
-
-
-        latent_norm  = torch.linalg.vector_norm(z_pred, dim=1)[:, None]
-        latent_scale = self.latent_final_layer(
-        torch.cat([latent_norm, batch.graph_sigma_emb], dim=1))
+        latent_norm  = torch.linalg.vector_norm(z_pred, dim=1)[:, None].clamp(min=1e-8)
+        latent_scale = self.latent_final_layer(torch.cat([latent_norm, batch.graph_sigma_emb], dim=1))
         z_pred = (z_pred / latent_norm) * latent_scale
 
 

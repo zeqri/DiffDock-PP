@@ -2,11 +2,12 @@
  # file is parsed by inner-most keys only
  data:
      dataset: dips
-     data_file: /p/project1/profound/al-zeqri1/DiffDock-PP/datasets/DIPS/data_file_debug.csv 
+    #  data_file: /p/project1/profound/al-zeqri1/DiffDock-PP/datasets/DIPS/data_file_debug.csv 
+     data_file:  /p/home/jusers/al-zeqri1/jureca/my-project/DiffDock-dev/DiffDock-PP/datasets/DIPS/data_file_10000.csv
     #  data_path: /p/project1/profound/al-zeqri1/DiffDock-PP/datasets/DIPS/DIPS/data/DIPS/interim/pairs-pruned
      data_path: /p/project1/profound/al-zeqri1/DiffDock-PP/datasets/DIPS/pairs_pruned/DIPS/data/DIPS/interim/pairs-pruned
      resolution: residue
-     recache: True
+     recache: False # set this to true and it will read from scaratch
      no_graph_cache: True
      knn_size: 20
      use_orientation_features: False

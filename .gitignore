@@ -7,6 +7,7 @@
 !1A2K_r_b.pdb
 **.DS_Store
 **.dill
+**.out
 
 **.nfs*
 
@@ -22,4 +23,5 @@ plots
 datasets/DIPS/pairs_pruned/
 datasets/DIPS/dips.zip
 diffdock_pp_jureca/
+datasets/
 torchhub
